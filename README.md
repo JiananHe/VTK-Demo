@@ -4,3 +4,7 @@ The compilation and installation processes of VTK and Qt: https://blog.csdn.net/
 
 ## [QPNGReader](./QPNGReader)
 A simple demo to presentation the usage of vtkPNGReader and the interaction between VTK and Qt. 
+
+## [QDicomSeriesReader](./QDicomSeriesReader)
+A demo to presentation how to use vtkDICOMReader to read DICOM folder, and traverse all the pictures through a Qt slide or mouse wheel.<br>
+The mouse wheel interaction implemented by redefining the interactor style class inherited from vtkInteractorStyleImage.
