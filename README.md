@@ -8,3 +8,9 @@ A simple demo to presentation the usage of vtkPNGReader and the interaction betw
 ## [QDicomSeriesReader](./QDicomSeriesReader)
 A demo to presentation how to use vtkDICOMReader to read DICOM folder, and traverse all the pictures through a Qt slide or mouse wheel.<br>
 The mouse wheel interaction implemented by redefining the interactor style class inherited from vtkInteractorStyleImage.
+
+## [DicomVolumeRender](./DicomVolumeRender)
+A volume Render demo that restructures dicom series with vtkFixedPointVolumeRayCastMapper or vtkGPUVolumeRayCastMapper.
+
+## [QDicomVolumeRender](./QDicomVolumeRender)
+DicomVolumeRender based on Qt.
