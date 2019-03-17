@@ -1,0 +1,11 @@
+1. Qt creater
+创建Qt项目，得到main.cpp, <project>.h, <project>.cpp, <project>.ui，然后退出
+
+2. 新建CMakeLists.txt
+声明项目名，依赖的packages，设置上一步生成的4个源文件，add_executable
+然后用cmake编译
+
+3. open project (with VS2017)
+双击.ui文件，在Qt designer中进行界面设计，此时可以使用QVTKWidget。
+设计完后，运行ctrl+f5应该可以成功。
+若要对界面进行更改，双击.ui打开Qt designer进行设计(若要修改控件名字，记得在属性中修改)，保存，然后"重新生成"项目。
