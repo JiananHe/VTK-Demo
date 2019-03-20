@@ -13,4 +13,4 @@ The mouse wheel interaction implemented by redefining the interactor style class
 A volume Render demo that restructures dicom series with vtkFixedPointVolumeRayCastMapper or vtkGPUVolumeRayCastMapper.
 
 ## [QDicomVolumeRender](./QDicomVolumeRender)
-DicomVolumeRender based on Qt.
+DicomVolumeRender based on Qt. The Transfer function are set to render bones. The background color can be changed through QColorDialog.

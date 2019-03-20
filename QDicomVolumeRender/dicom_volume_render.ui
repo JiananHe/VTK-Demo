@@ -40,7 +40,14 @@
     </property>
     <addaction name="actionOpen_Folder"/>
    </widget>
+   <widget class="QMenu" name="menuSetting">
+    <property name="title">
+     <string>Setting</string>
+    </property>
+    <addaction name="actionSet_BgColor"/>
+   </widget>
    <addaction name="menuOpen"/>
+   <addaction name="menuSetting"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -54,6 +61,11 @@
   <action name="actionOpen_Folder">
    <property name="text">
     <string>Open Folder</string>
+   </property>
+  </action>
+  <action name="actionSet_BgColor">
+   <property name="text">
+    <string>Background Color</string>
    </property>
   </action>
  </widget>

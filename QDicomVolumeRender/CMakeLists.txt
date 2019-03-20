@@ -15,6 +15,7 @@ vtk_module_config(VTK
   vtkRenderingCore
   vtkRenderingFreeType
   vtkRenderingVolumeOpenGL2
+  vtkImagingStatistics
 )
 include(${VTK_USE_FILE})
 
