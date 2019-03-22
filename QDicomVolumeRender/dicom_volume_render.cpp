@@ -13,8 +13,15 @@ Dicom_Volume_Render::Dicom_Volume_Render(QWidget *parent) :
 	dicoms_reader = vtkSmartPointer<vtkDICOMImageReader>::New();
 	volume_render = vtkSmartPointer<vtkRenderer>::New();
 
+	volumeColor = vtkSmartPointer<vtkColorTransferFunction>::New();
+	volumeScalarOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
+
 	connect(ui->actionOpen_Folder, SIGNAL(triggered()), this, SLOT(onOpenFolderSlot()));
 	connect(ui->actionSet_BgColor, SIGNAL(triggered()), this, SLOT(onSetBgColorSlot()));
+	connect(ui->actionBoneStyle, SIGNAL(triggered()), this, SLOT(onSetBoneRender()));
+	connect(ui->actionMuscleStyle, SIGNAL(triggered()), this, SLOT(onSetMuscleRender()));
+	connect(ui->actionSkinStyle, SIGNAL(triggered()), this, SLOT(onSetSkinRender()));
+	connect(ui->actionBone2Style, SIGNAL(triggered()), this, SLOT(onSetBone2Render()));
 }
 
 Dicom_Volume_Render::~Dicom_Volume_Render()
@@ -118,9 +125,8 @@ void Dicom_Volume_Render::onOpenFolderSlot()
 	vtkSmartPointer<vtkGPUVolumeRayCastMapper> volumeMapperGpu = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
 	volumeMapperGpu->SetInputConnection(dicoms_reader->GetOutputPort());
 
-	// The opacity transfer function is used to control the opacity
-	// of different tissue types.
-	vtkSmartPointer<vtkPiecewiseFunction> volumeScalarOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
+	// The opacity transfer function is used to control the opacity of different tissue types.
+	//bone
 	volumeScalarOpacity->AddPoint(-3024, 0.00);
 	volumeScalarOpacity->AddPoint(143.56, 0.00);
 	volumeScalarOpacity->AddPoint(166.22, 0.69);
@@ -128,15 +134,15 @@ void Dicom_Volume_Render::onOpenFolderSlot()
 	volumeScalarOpacity->AddPoint(419.74, 0.83);
 	volumeScalarOpacity->AddPoint(3071, 0.80);
 
-	// The opacity transfer function is used to control the opacity
-	// of different tissue types.
-	vtkSmartPointer<vtkColorTransferFunction> volumeColor = vtkSmartPointer<vtkColorTransferFunction>::New();
+	// The opacity transfer function is used to control the opacity of different tissue types.
+	//bone
 	volumeColor->AddRGBPoint(-3024, 0.0, 0.0, 0.0);
 	volumeColor->AddRGBPoint(143.56, 157/255.0, 91/255.0, 47/255.0);
 	volumeColor->AddRGBPoint(166.22, 1.0, 154/255.0, 74/255.0);
 	volumeColor->AddRGBPoint(214.39, 1.0, 1.0, 1.0);
 	volumeColor->AddRGBPoint(419.74, 1.0, 239/255.0, 244/255.0);
 	volumeColor->AddRGBPoint(3071, 211/255.0, 168/255.0, 255/255.0);
+
 
 	// The gradient opacity function is used to decrease the opacity
 	// in the "flat" regions of the volume while maintaining the opacity
@@ -192,8 +198,89 @@ void Dicom_Volume_Render::onSetBgColorSlot()
 		vtkSmartPointer<vtkNamedColors> colors = vtkSmartPointer<vtkNamedColors>::New();
 		colors->SetColor("bgColor_yellow", color.red()/255.0, color.green()/255.0, color.blue()/255.0);
 		volume_render->SetBackground(colors->GetColor3d("bgColor_yellow").GetData());
-		//volume_render->Render();
 		ui->myQvtkWidget->GetRenderWindow()->Render();
-		//qApp->processEvents();
+		ui->myQvtkWidget->update();
 	}
+}
+
+void Dicom_Volume_Render::onSetBoneRender()
+{
+	volumeColor->RemoveAllPoints();
+	volumeScalarOpacity->RemoveAllPoints();
+	//bone
+	volumeColor->AddRGBPoint(-3024, 0.0, 0.0, 0.0);
+	volumeColor->AddRGBPoint(143.56, 157 / 255.0, 91 / 255.0, 47 / 255.0);
+	volumeColor->AddRGBPoint(166.22, 1.0, 154 / 255.0, 74 / 255.0);
+	volumeColor->AddRGBPoint(214.39, 1.0, 1.0, 1.0);
+	volumeColor->AddRGBPoint(419.74, 1.0, 239 / 255.0, 244 / 255.0);
+	volumeColor->AddRGBPoint(3071, 211 / 255.0, 168 / 255.0, 255 / 255.0);
+
+	volumeScalarOpacity->AddPoint(-3024, 0.00);
+	volumeScalarOpacity->AddPoint(143.56, 0.00);
+	volumeScalarOpacity->AddPoint(166.22, 0.69);
+	volumeScalarOpacity->AddPoint(214.39, 0.70);
+	volumeScalarOpacity->AddPoint(419.74, 0.83);
+	volumeScalarOpacity->AddPoint(3071, 0.80);
+
+	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->myQvtkWidget->update();
+}
+
+void Dicom_Volume_Render::onSetMuscleRender()
+{
+	volumeColor->RemoveAllPoints();
+	volumeScalarOpacity->RemoveAllPoints();
+	//muscle
+	volumeColor->AddRGBPoint(-3024, 0, 0, 0, 0.5, 0.0);
+	volumeColor->AddRGBPoint(-155, .55, .25, .15, 0.5, .92);
+	volumeColor->AddRGBPoint(420, 1, .94, .95, 0.5, 0.0);
+	volumeColor->AddRGBPoint(3071, .83, .66, 1, 0.5, 0.0);
+	volumeColor->AddRGBPoint(217, .88, .60, .29, 0.33, 0.45);
+
+	volumeScalarOpacity->AddPoint(-3024, 0, 0.5, 0.0);
+	volumeScalarOpacity->AddPoint(-155, 0, 0.5, 0.92);
+	volumeScalarOpacity->AddPoint(217, .68, 0.33, 0.45);
+	volumeScalarOpacity->AddPoint(420, .83, 0.5, 0.0);
+	volumeScalarOpacity->AddPoint(3071, .80, 0.5, 0.0);
+
+	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->myQvtkWidget->update();
+}
+
+void Dicom_Volume_Render::onSetSkinRender()
+{
+	volumeColor->RemoveAllPoints();
+	volumeScalarOpacity->RemoveAllPoints();
+	//skin
+	volumeColor->AddRGBPoint(-3024, 0, 0, 0, 0.5, 0.0);
+	volumeColor->AddRGBPoint(-1000, .62, .36, .18, 0.5, 0.0);
+	volumeColor->AddRGBPoint(-500, .88, .60, .29, 0.33, 0.45);
+	volumeColor->AddRGBPoint(3071, .83, .66, 1, 0.5, 0.0);
+
+	volumeScalarOpacity->AddPoint(-3024, 0, 0.5, 0.0);
+	volumeScalarOpacity->AddPoint(-1000, 0, 0.5, 0.0);
+	volumeScalarOpacity->AddPoint(-500, 1.0, 0.33, 0.45);
+	volumeScalarOpacity->AddPoint(3071, 1.0, 0.5, 0.0);
+
+	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->myQvtkWidget->update();
+}
+
+void Dicom_Volume_Render::onSetBone2Render()
+{
+	volumeColor->RemoveAllPoints();
+	volumeScalarOpacity->RemoveAllPoints();
+
+	volumeColor->AddRGBPoint(-3024, 0, 0, 0, 0.5, 0.0);
+	volumeColor->AddRGBPoint(-16, 0.73, 0.25, 0.30, 0.49, .61);
+	volumeColor->AddRGBPoint(641, .90, .82, .56, .5, 0.0);
+	volumeColor->AddRGBPoint(3071, 1, 1, 1, .5, 0.0);
+
+	volumeScalarOpacity->AddPoint(-3024, 0, 0.5, 0.0);
+	volumeScalarOpacity->AddPoint(-16, 0, .49, .61);
+	volumeScalarOpacity->AddPoint(641, .72, .5, 0.0);
+	volumeScalarOpacity->AddPoint(3071, .71, 0.5, 0.0);
+
+	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->myQvtkWidget->update();
 }

@@ -65,7 +65,9 @@ private:
     Ui::Dicom_Volume_Render *ui;
 	vtkSmartPointer<vtkDICOMImageReader> dicoms_reader;
 	vtkSmartPointer<vtkRenderer> volume_render;
-	vtkSmartPointer< vtkRenderWindow> renwin;
+
+	vtkSmartPointer<vtkColorTransferFunction> volumeColor;
+	vtkSmartPointer<vtkPiecewiseFunction> volumeScalarOpacity;
 
 private:
 	priority_queue<color_breakpoint> color_bps;
@@ -78,6 +80,11 @@ public:
 private slots:
 	void onOpenFolderSlot();
 	void onSetBgColorSlot();
+
+	void onSetBoneRender();
+	void onSetMuscleRender();
+	void onSetSkinRender();
+	void onSetBone2Render();
 	bool eventFilter(QObject *, QEvent *);
 };
 

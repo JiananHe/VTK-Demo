@@ -92,6 +92,16 @@
     <property name="title">
      <string>Setting</string>
     </property>
+    <widget class="QMenu" name="menuRender_Styles">
+     <property name="title">
+      <string>Render Styles</string>
+     </property>
+     <addaction name="actionBoneStyle"/>
+     <addaction name="actionBone2Style"/>
+     <addaction name="actionSkinStyle"/>
+     <addaction name="actionMuscleStyle"/>
+    </widget>
+    <addaction name="menuRender_Styles"/>
     <addaction name="actionSet_BgColor"/>
    </widget>
    <addaction name="menuOpen"/>
@@ -114,6 +124,26 @@
   <action name="actionSet_BgColor">
    <property name="text">
     <string>Background Color</string>
+   </property>
+  </action>
+  <action name="actionBoneStyle">
+   <property name="text">
+    <string>Bone</string>
+   </property>
+  </action>
+  <action name="actionMuscleStyle">
+   <property name="text">
+    <string>Muscle</string>
+   </property>
+  </action>
+  <action name="actionSkinStyle">
+   <property name="text">
+    <string>Skin</string>
+   </property>
+  </action>
+  <action name="actionBone2Style">
+   <property name="text">
+    <string>Bone2</string>
    </property>
   </action>
  </widget>
