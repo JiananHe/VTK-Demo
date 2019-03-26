@@ -22,6 +22,7 @@ Dicom_Volume_Render::Dicom_Volume_Render(QWidget *parent) :
 	connect(ui->actionMuscleStyle, SIGNAL(triggered()), this, SLOT(onSetMuscleRender()));
 	connect(ui->actionSkinStyle, SIGNAL(triggered()), this, SLOT(onSetSkinRender()));
 	connect(ui->actionBone2Style, SIGNAL(triggered()), this, SLOT(onSetBone2Render()));
+	connect(ui->actionBinaryStyle, SIGNAL(triggered()), this, SLOT(onSetBinaryRender()));
 }
 
 Dicom_Volume_Render::~Dicom_Volume_Render()
@@ -52,6 +53,35 @@ bool Dicom_Volume_Render::eventFilter(QObject *watched, QEvent *event)
 	return QMainWindow::eventFilter(watched, event);
 }
 
+color_bp* Dicom_Volume_Render::getAllColorBPoints()
+{
+	try
+	{
+		if (color_bps.empty())
+			throw "color transfer empty error";
+		else
+		{
+			int n = color_bps.size();
+			color_bp* color_bps_list = new color_bp[n];
+			priority_queue<color_bp*> color_bps_temp;
+			for (int i = 0; i < n; ++i)
+			{
+				color_bps_list[i] = *(color_bps.top());
+				color_bps_temp.push(color_bps.top());
+				color_bps.pop();
+			}
+			color_bps = color_bps_temp;
+			return color_bps_list;
+		}
+	}
+	catch (...)
+	{
+		cout << "color transfer empty error" << endl;
+		abort();
+	}
+	return nullptr;
+}
+
 void Dicom_Volume_Render::drawColorTransfer()
 {
 	ui->min_gray_label->setText(QString::number(min_gray_value, 10, 2));
@@ -59,18 +89,37 @@ void Dicom_Volume_Render::drawColorTransfer()
 
 	QPainter painter(ui->color_transfer_widget);
 	painter.setRenderHint(QPainter::Antialiasing, true);
+
 	int w = ui->color_transfer_widget->geometry().width();
 	int h = ui->color_transfer_widget->geometry().height();
+	int n = color_bps.size();
+	int d = 11; //the diameter of cirlces in breakpoints
 
 	//linear gradient color
-	QLinearGradient linearGradient(0, h/2, w, h/2);
-
-	linearGradient.setColorAt(0, Qt::black);
-	linearGradient.setColorAt(1, Qt::white);
+	color_bp* color_bp_list = getAllColorBPoints();
+	QLinearGradient linearGradient(d, h/2, w-d, h/2);
+	double * point_list = new double[n];
+	for (int i = 0; i < n; ++i)
+	{
+		color_bp temp = color_bp_list[i];
+		double point = (temp.gray_value - min_gray_value) / (max_gray_value - min_gray_value);
+		point_list[i] = point;
+		linearGradient.setColorAt(point, QColor(temp.r, temp.g, temp.b));
+	}
 	painter.setBrush(QBrush(linearGradient));
-	painter.drawRect(0, 0, w, h);
+	painter.drawRect(d, 0, w - 2 * d, h);
 
-	//draw circle in break point with corresponding color
+	//draw circle in break point
+	
+	for (int i = 0; i < n; ++i)
+	{
+		painter.setPen(QPen(Qt::gray, 5, Qt::SolidLine));
+		//the first and second params is the left top coordiantes of ellipse
+		painter.drawEllipse((w - 2 * d)*point_list[i] + d - d / 2, h / 2 - d / 2, d, d);
+		painter.setPen(QPen(Qt::darkBlue, 4));
+		painter.setBrush(Qt::NoBrush);
+		painter.drawEllipse((w - 2 * d)*point_list[i] + d - d / 2 - 4, h / 2 - d / 2 - 4, d + 8, d + 8);
+	}
 }
 
 void Dicom_Volume_Render::onOpenFolderSlot()
@@ -111,15 +160,8 @@ void Dicom_Volume_Render::onOpenFolderSlot()
 	histogram->Update();
 	max_gray_value = *(histogram->GetMax());
 	min_gray_value = *(histogram->GetMin());
-	color_bps.push(color_breakpoint(max_gray_value, 1.0, 1.0, 1.0));
-	color_bps.push(color_breakpoint(min_gray_value, 0.0, 0.0, 0.0));
 	cout << max_gray_value << endl;
 	cout << min_gray_value << endl;
-
-	//change color transfer widget through event
-	ui->color_transfer_widget->setVisible(true);
-	ui->color_transfer_widget->repaint();
-
 
 	//Mapper
 	vtkSmartPointer<vtkGPUVolumeRayCastMapper> volumeMapperGpu = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
@@ -136,12 +178,21 @@ void Dicom_Volume_Render::onOpenFolderSlot()
 
 	// The opacity transfer function is used to control the opacity of different tissue types.
 	//bone
-	volumeColor->AddRGBPoint(-3024, 0.0, 0.0, 0.0);
+	int max_point = 3071 > max_gray_value ? max_gray_value : 3071;
+	int min_point = -3024 < min_gray_value ? min_gray_value : -3024;
+	volumeColor->AddRGBPoint(min_point, 0.0, 0.0, 0.0);
 	volumeColor->AddRGBPoint(143.56, 157/255.0, 91/255.0, 47/255.0);
 	volumeColor->AddRGBPoint(166.22, 1.0, 154/255.0, 74/255.0);
 	volumeColor->AddRGBPoint(214.39, 1.0, 1.0, 1.0);
 	volumeColor->AddRGBPoint(419.74, 1.0, 239/255.0, 244/255.0);
-	volumeColor->AddRGBPoint(3071, 211/255.0, 168/255.0, 255/255.0);
+	volumeColor->AddRGBPoint(max_point, 211/255.0, 168/255.0, 255/255.0);
+
+	color_bps.push(new color_bp(min_point, 0.0, 0.0, 0.0));
+	color_bps.push(new color_bp(143.56, 157 / 255.0, 91 / 255.0, 47 / 255.00));
+	color_bps.push(new color_bp(166.22, 1.0, 154 / 255.0, 74 / 255.0));
+	color_bps.push(new color_bp(214.39, 1.0, 1.0, 1.0));
+	color_bps.push(new color_bp(419.74, 1.0, 239 / 255.0, 244 / 255.0));
+	color_bps.push(new color_bp(max_point, 211 / 255.0, 168 / 255.0, 255 / 255.0));
 
 
 	// The gradient opacity function is used to decrease the opacity
@@ -155,7 +206,7 @@ void Dicom_Volume_Render::onOpenFolderSlot()
 	volumeGradientOpacity->AddPoint(100, 1.0);*/
 
 	//vtkVolumeProperty
-	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();//定义对象属性
+	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
 	volumeProperty->SetInterpolationTypeToLinear();
 	volumeProperty->ShadeOn();
 	volumeProperty->SetAmbient(0.1);
@@ -176,15 +227,11 @@ void Dicom_Volume_Render::onOpenFolderSlot()
 	volume_render->AddViewProp(volume);
 	ui->myQvtkWidget->GetRenderWindow()->AddRenderer(volume_render);
 
+	//change color transfer widget through event
+	ui->color_transfer_widget->setVisible(true);
+	ui->color_transfer_widget->repaint();
+
 	ui->myQvtkWidget->GetRenderWindow()->Render();
-	//qApp->processEvents();
-	//ui->myQvtkWidget->GetInteractor()->Start();
-}
-
-color_breakpoint * Dicom_Volume_Render::getAllColorBPoints()
-{
-
-	return nullptr;
 }
 
 void Dicom_Volume_Render::onSetBgColorSlot()
@@ -215,6 +262,17 @@ void Dicom_Volume_Render::onSetBoneRender()
 	volumeColor->AddRGBPoint(419.74, 1.0, 239 / 255.0, 244 / 255.0);
 	volumeColor->AddRGBPoint(3071, 211 / 255.0, 168 / 255.0, 255 / 255.0);
 
+	priority_queue<color_bp*> color_bps_temp;
+	int max_point = 3071 > max_gray_value ? max_gray_value : 3071;
+	int min_point = -3024 < min_gray_value ? min_gray_value : -3024;
+	color_bps_temp.push(new color_bp(min_point, 0.0, 0.0, 0.0));
+	color_bps_temp.push(new color_bp(143.56, 157 / 255.0, 91 / 255.0, 47 / 255.00));
+	color_bps_temp.push(new color_bp(166.22, 1.0, 154 / 255.0, 74 / 255.0));
+	color_bps_temp.push(new color_bp(214.39, 1.0, 1.0, 1.0));
+	color_bps_temp.push(new color_bp(419.74, 1.0, 239 / 255.0, 244 / 255.0));
+	color_bps_temp.push(new color_bp(max_point, 211 / 255.0, 168 / 255.0, 255 / 255.0));
+	color_bps = color_bps_temp;
+
 	volumeScalarOpacity->AddPoint(-3024, 0.00);
 	volumeScalarOpacity->AddPoint(143.56, 0.00);
 	volumeScalarOpacity->AddPoint(166.22, 0.69);
@@ -223,6 +281,7 @@ void Dicom_Volume_Render::onSetBoneRender()
 	volumeScalarOpacity->AddPoint(3071, 0.80);
 
 	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->color_transfer_widget->repaint();
 	ui->myQvtkWidget->update();
 }
 
@@ -234,8 +293,18 @@ void Dicom_Volume_Render::onSetMuscleRender()
 	volumeColor->AddRGBPoint(-3024, 0, 0, 0, 0.5, 0.0);
 	volumeColor->AddRGBPoint(-155, .55, .25, .15, 0.5, .92);
 	volumeColor->AddRGBPoint(420, 1, .94, .95, 0.5, 0.0);
-	volumeColor->AddRGBPoint(3071, .83, .66, 1, 0.5, 0.0);
 	volumeColor->AddRGBPoint(217, .88, .60, .29, 0.33, 0.45);
+	volumeColor->AddRGBPoint(3071, .83, .66, 1, 0.5, 0.0);
+
+	priority_queue<color_bp*> color_bps_temp;
+	int max_point = 3071 > max_gray_value ? max_gray_value : 3071;
+	int min_point = -3024 < min_gray_value ? min_gray_value : -3024;
+	color_bps_temp.push(new color_bp(min_point, 0.0, 0.0, 0.0));
+	color_bps_temp.push(new color_bp(-155, .55, .25, .15));
+	color_bps_temp.push(new color_bp(420, 1, .94, .95));
+	color_bps_temp.push(new color_bp(217, .88, .60, .29));
+	color_bps_temp.push(new color_bp(max_point, .83, .66, 1));
+	color_bps = color_bps_temp;
 
 	volumeScalarOpacity->AddPoint(-3024, 0, 0.5, 0.0);
 	volumeScalarOpacity->AddPoint(-155, 0, 0.5, 0.92);
@@ -244,6 +313,7 @@ void Dicom_Volume_Render::onSetMuscleRender()
 	volumeScalarOpacity->AddPoint(3071, .80, 0.5, 0.0);
 
 	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->color_transfer_widget->repaint();
 	ui->myQvtkWidget->update();
 }
 
@@ -257,12 +327,22 @@ void Dicom_Volume_Render::onSetSkinRender()
 	volumeColor->AddRGBPoint(-500, .88, .60, .29, 0.33, 0.45);
 	volumeColor->AddRGBPoint(3071, .83, .66, 1, 0.5, 0.0);
 
+	priority_queue<color_bp*> color_bps_temp;
+	int max_point = 3071 > max_gray_value ? max_gray_value : 3071;
+	int min_point = -3024 < min_gray_value ? min_gray_value : -3024;
+	color_bps_temp.push(new color_bp(min_point, 0.0, 0.0, 0.0));
+	color_bps_temp.push(new color_bp(-1000, .62, .36, .18));
+	color_bps_temp.push(new color_bp(-500, .88, .60, .29));
+	color_bps_temp.push(new color_bp(max_point, .83, .66, 1));
+	color_bps = color_bps_temp;
+
 	volumeScalarOpacity->AddPoint(-3024, 0, 0.5, 0.0);
 	volumeScalarOpacity->AddPoint(-1000, 0, 0.5, 0.0);
 	volumeScalarOpacity->AddPoint(-500, 1.0, 0.33, 0.45);
 	volumeScalarOpacity->AddPoint(3071, 1.0, 0.5, 0.0);
 
 	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->color_transfer_widget->repaint();
 	ui->myQvtkWidget->update();
 }
 
@@ -276,11 +356,47 @@ void Dicom_Volume_Render::onSetBone2Render()
 	volumeColor->AddRGBPoint(641, .90, .82, .56, .5, 0.0);
 	volumeColor->AddRGBPoint(3071, 1, 1, 1, .5, 0.0);
 
+	priority_queue<color_bp*> color_bps_temp;
+	int max_point = 3071 > max_gray_value ? max_gray_value : 3071;
+	int min_point = -3024 < min_gray_value ? min_gray_value : -3024;
+	color_bps_temp.push(new color_bp(min_point, 0.0, 0.0, 0.0));
+	color_bps_temp.push(new color_bp(-16, 0.73, 0.25, 0.30));
+	color_bps_temp.push(new color_bp(641, .90, .82, .56));
+	color_bps_temp.push(new color_bp(max_point, 1, 1, 1));
+	color_bps = color_bps_temp;
+
 	volumeScalarOpacity->AddPoint(-3024, 0, 0.5, 0.0);
 	volumeScalarOpacity->AddPoint(-16, 0, .49, .61);
 	volumeScalarOpacity->AddPoint(641, .72, .5, 0.0);
 	volumeScalarOpacity->AddPoint(3071, .71, 0.5, 0.0);
 
 	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->color_transfer_widget->repaint();
+	ui->myQvtkWidget->update();
+}
+
+void Dicom_Volume_Render::onSetBinaryRender()
+{
+	volumeColor->RemoveAllPoints();
+	volumeScalarOpacity->RemoveAllPoints();
+
+	volumeColor->AddRGBPoint(-1024, 0.0, 0.0, 0.0);
+	volumeColor->AddRGBPoint(-1013, 0.5, 0.5, 0.5);
+	volumeColor->AddRGBPoint(-769, 1, 1, 1);
+
+	priority_queue<color_bp*> color_bps_temp;
+	int max_point = 3071 > max_gray_value ? max_gray_value : 3071;
+	int min_point = -3024 < min_gray_value ? min_gray_value : -3024;
+	color_bps_temp.push(new color_bp(min_point, 0.0, 0.0, 0.0));
+	color_bps_temp.push(new color_bp(-1013, 0.5, 0.5, 0.5));
+	color_bps_temp.push(new color_bp(max_point, .83, .66, 1));
+	color_bps = color_bps_temp;
+
+	volumeScalarOpacity->AddPoint(-1024, 0.0);
+	volumeScalarOpacity->AddPoint(-1013, 1.0);
+	volumeScalarOpacity->AddPoint(-769, 1.0);
+
+	ui->myQvtkWidget->GetRenderWindow()->Render();
+	ui->color_transfer_widget->repaint();
 	ui->myQvtkWidget->update();
 }

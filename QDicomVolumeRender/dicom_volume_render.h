@@ -30,20 +30,21 @@
 #include <queue>
 using namespace std;
 
-struct color_breakpoint
+struct color_bp
 {
-	double gray_value, r, g, b;
-	//color_breakpoint() {};
-	color_breakpoint(double gv, double r, double g, double b)
+	double gray_value;
+	int r, g, b;
+	color_bp() {};
+	color_bp(double gv, double r, double g, double b)
 	{
 		this->gray_value = gv;
-		this->r = r;
-		this->g = g;
-		this->b = b;
+		this->r = int(r*255 + 0.5);
+		this->g = int(g*255 + 0.5);
+		this->b = int(b*255 + 0.5);
 	}
-	bool operator<(const color_breakpoint a) const
+	bool operator<(const color_bp* a) const
 	{
-		return gray_value < a.gray_value;
+		return gray_value < a->gray_value;
 	}
 };
 
@@ -59,8 +60,6 @@ public:
     explicit Dicom_Volume_Render(QWidget *parent = nullptr);
     ~Dicom_Volume_Render();
 
-	void drawColorTransfer();
-
 private:
     Ui::Dicom_Volume_Render *ui;
 	vtkSmartPointer<vtkDICOMImageReader> dicoms_reader;
@@ -70,12 +69,14 @@ private:
 	vtkSmartPointer<vtkPiecewiseFunction> volumeScalarOpacity;
 
 private:
-	priority_queue<color_breakpoint> color_bps;
+	priority_queue<color_bp*> color_bps;
 	double min_gray_value;
 	double max_gray_value;
 
+	void drawColorTransfer();
+
 public:
-	color_breakpoint* getAllColorBPoints();
+	color_bp* getAllColorBPoints();	
 
 private slots:
 	void onOpenFolderSlot();
@@ -85,6 +86,8 @@ private slots:
 	void onSetMuscleRender();
 	void onSetSkinRender();
 	void onSetBone2Render();
+	void onSetBinaryRender();
+
 	bool eventFilter(QObject *, QEvent *);
 };
 
